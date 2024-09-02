@@ -1,0 +1,45 @@
+name: Run the Android build on Windows
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Unity
+        run: |
+          # ダウンロードするUnityバージョンのURLを指定
+          $unityUrl = "https://download.unity3d.com/download_unity/0e6d77d71b40/Windows64EditorInstaller/UnitySetup64.exe"
+          Invoke-WebRequest -Uri $unityUrl -OutFile UnitySetup.exe
+          # Unityをインストール
+          Start-Process -FilePath UnitySetup.exe -ArgumentList "/S /D=C:\Program Files\Unity\Hub\Editor\2020.3.17f1" -NoNewWindow -Wait
+        shell: pwsh
+
+      - name: Activate Unity License
+        run: |
+          & "C:\Program Files\Unity\Hub\Editor\2020.3.17f1\Editor\Unity.exe" -batchmode -username $env:UNITY_EMAIL -password $env:UNITY_PASSWORD -logFile "C:\Users\runneradmin\unity_license_activation.log"
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        shell: pwsh
+
+      - name: Run the Android build
+        run: |
+          & "C:\Program Files\Unity\Hub\Editor\2020.3.17f1\Editor\Unity.exe" -batchmode -buildTarget Android -projectPath . -executeMethod BuildScript.PerformBuild -logFile "C:\Users\runneradmin\unity_build.log"
+        shell: pwsh
+
+      - name: Upload the Android Build
+        uses: actions/upload-artifact@v3
+        with:
+          name: AndroidBuild
+          path: build/Android/*.apk

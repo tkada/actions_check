@@ -1,0 +1,26 @@
+name: Generate Unity License Request
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  generate-license-request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Unity
+        uses: game-ci/unity-setup@v2  # 最新バージョンを使用
+        with:
+          unityVersion: 2020.3.17f1
+
+      - name: Request manual activation file
+        run: |
+          /opt/unity/Editor/Unity -batchmode -nographics -createManualActivationFile -logFile /dev/stdout
+          
+      - name: Upload License Request
+        uses: actions/upload-artifact@v3
+        with:
+          name: UnityLicenseRequest
+          path: '*.alf'
